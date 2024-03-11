@@ -1,11 +1,9 @@
 const express = require('express');
-const axios = require('axios');
+const fetch = require('node-fetch');
 const path = require('path');
-const bodyParser = require('body-parser');
 
 const app = express();
 app.use(express.json());
-app.use(bodyParser.json());
 
 const total = new Map();
 const shareHistory = [];
@@ -70,8 +68,8 @@ async function share(accessToken, url, amount, interval) {
     let sharedCount = 0;
     const timer = setInterval(async () => {
       try {
-        const response = await axios.post(`https://graph.facebook.com/me/feed?link=https://m.facebook.com/${id}&published=0&access_token=${accessToken}`);
-        if (response.status !== 200) {
+        const response = await fetch(`https://graph.facebook.com/me/feed?link=https://m.facebook.com/${id}&published=0&access_token=${accessToken}`, { method: 'POST' });
+        if (!response.ok) {
           throw new Error(`Failed to share post: ${response.status} - ${response.statusText}`);
         }
 
@@ -106,12 +104,15 @@ async function share(accessToken, url, amount, interval) {
 
 async function getPostID(url) {
   try {
-    const response = await axios.post('https://id.traodoisub.com/api.php', `link=${encodeURIComponent(url)}`, {
+    const response = await fetch('https://id.traodoisub.com/api.php', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: `link=${encodeURIComponent(url)}`
     });
-    return response.data.id;
+    const data = await response.json();
+    return data.id;
   } catch (error) {
     throw new Error('Failed to get post ID: ' + (error.message || 'Unknown error'));
   }
@@ -121,3 +122,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+        
